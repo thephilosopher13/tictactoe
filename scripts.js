@@ -13,6 +13,7 @@ startButton.addEventListener('click', () => {
 
 restartButton.addEventListener('click', () => {
     Gameflow.initializeGame();
+    startButton.disabled = true;
 });
 
 xButton.addEventListener('click' , () => {
@@ -58,12 +59,11 @@ const Gameboard = (() => {
       
             const hasGameEnded = Gameflow.getEndGameChecker().result;
             const switchTurn = Gameflow.getSwitchTurnFunction();
-            const endGameLogic = Gameflow.getEndGameLogic();
       
             if (hasGameEnded === true) {
-              endGameLogic();
+                Gameflow.getEndGameLogic();
             } else {
-              switchTurn();
+                switchTurn();
             }
       
             infoDisplayController.updateDisplayGenerator();
@@ -86,6 +86,7 @@ const Gameboard = (() => {
             for (let j = 1; j <= 3; j++) {
                 let cell = divCreator.cloneNode();
                 cell.classList.add('cell');
+                cell.classList.add('divstransparent')
                 cell.id = 'row' + i + 'column' + j;
                 row.appendChild(cell);
             }
@@ -95,7 +96,9 @@ const Gameboard = (() => {
 
         const cells = document.querySelectorAll('.cell');
         cells.forEach((cell) => {
-            _addCellClickListener(cell)
+            _addCellClickListener(cell);
+            cell.classList.remove('divstransparent');
+            cell.classList.add('divsopaque');
         });
     };
 
@@ -131,7 +134,7 @@ const infoDisplayController = (() => {
 
         const turnCounterDiv = divCreator.cloneNode();
         turnCounterDiv.id = 'turnCounterDiv'; // Add an ID for easy access
-        turnCounterDiv.textContent = `Turns: ${Gameflow.getTurnCounter()}`;
+        turnCounterDiv.textContent = `Turns passed: ${Gameflow.getTurnCounter()}`;
 
         infoContainer.appendChild(currentPlayerDiv);
         infoContainer.appendChild(turnCounterDiv);
@@ -176,11 +179,12 @@ const Gameflow = (() => {
     }
 
     const initializeGame = () => {
+        turnCounterReset();
+        currentPlayerIndex = 0
+        enableCells();
         Gameboard.gameboardGenerator();
         playerGeneration.generatePlayersPublic();
-        turnCounterReset();
         infoDisplayController.getInfoDisplayGenerator();
-        currentPlayerIndex = 0
         xButton.disabled = true;
         oButton.disabled = true;
     };
@@ -232,7 +236,7 @@ const Gameflow = (() => {
         // Check rows
         for (let i = 1; i <= 3; i++) {
           const row = gameboard.filter(obj => obj.squareCoordinates.includes('row' + i));
-          if (row.length === 3 && row.every(obj => obj.marker === row[0].marker && obj.marker !== null)) {
+          if (row.length === 3 && row.every(obj => obj.marker === row[0].marker && obj.marker !== '')) {
             return { result: true, tie: false }; // Game ends with a row victory
           }
         }
@@ -240,42 +244,64 @@ const Gameflow = (() => {
         // Check columns
         for (let i = 1; i <= 3; i++) {
           const column = gameboard.filter(obj => obj.squareCoordinates.includes('column' + i));
-          if (column.length === 3 && column.every(obj => obj.marker === column[0].marker && obj.marker !== null)) {
+          if (column.length === 3 && column.every(obj => obj.marker === column[0].marker && obj.marker !== '')) {
             return { result: true, tie: false }; // Game ends with a column victory
           }
         }
     
         // Check diagonals
-        const diagonal1 = gameboard.filter(obj => obj.squareCoordinates.includes('row1square1') || obj.squareCoordinates.includes('row2square2') || obj.squareCoordinates.includes('row3square3'));
-        const diagonal2 = gameboard.filter(obj => obj.squareCoordinates.includes('row1square3') || obj.squareCoordinates.includes('row2square2') || obj.squareCoordinates.includes('row3square1'));
-        if ((diagonal1.length === 3 && diagonal1.every(obj => obj.marker === diagonal1[0].marker && obj.marker !== null)) || (diagonal2.length === 3 && diagonal2.every(obj => obj.marker === diagonal2[0].marker && obj.marker !== null))) {
-          return { result: true, tie: false }; // Game ends with a diagonal victory
-        }
+        const diagonal1 = gameboard.filter(obj => obj.squareCoordinates === 'row1column1' || obj.squareCoordinates === 'row2column2' || obj.squareCoordinates === 'row3column3');
+        const diagonal2 = gameboard.filter(obj => obj.squareCoordinates === 'row1column3' || obj.squareCoordinates === 'row2column2' || obj.squareCoordinates === 'row3column1');
+        if ((diagonal1.length === 3 && diagonal1.every(obj => obj.marker === diagonal1[0].marker && obj.marker !== '')) || (diagonal2.length === 3 && diagonal2.every(obj => obj.marker === diagonal2[0].marker && obj.marker !== ''))) { 
+            return { result: true, tie: false }; // Game ends with a diagonal victory
+}
     
         return { result: false, tie: false }; // Game not ended yet
       };
 
       const getEndGameChecker = () => {
-        return checkEndGame
+        return checkEndGame();
       }
       
 
       const _endGameLogic = () => {
         const gameEnded = checkEndGame();
         const currentPlayerName = getCurrentPlayerName();
+        const popupModal = document.querySelector('.endgamepopupmodal');
+        const resultText = document.querySelector('.endgamedescription')
+
+        popupModal.style.display = "block";
+        
+        popupModal.addEventListener('click', (e) => {
+            if (e.target === popupModal) {
+              popupModal.style.display = "none";
+            }
+        });
+
+        startButton.disabled = false;
+        xButton.disabled = false;
+        oButton.disabled = false;
+        disableCells();
 
         if (gameEnded.result) {
             if (gameEnded.tie) {
-                return `It's a tie!`
+                resultText.textContent = `It's a tie!`
             } else {
-                return `(${currentPlayerName}) wins!`
+                resultText.textContent = `${currentPlayerName} wins!`
             }
         }
         return 
       }
 
       const getEndGameLogic = () => {
-        return _endGameLogic
+        return _endGameLogic();
+      }
+
+      const enableCells = () => {
+        const cells = document.querySelectorAll('.cell')
+        cells.forEach((cell) => {
+            cell.disabled = false
+        });
       }
     
       // ...
@@ -311,7 +337,7 @@ const playerGeneration = (() => {
 
     const _generatePlayers = () => {
         for (let i = 1; i <= 2; i++) {
-            let name = "player" + i;
+            let name = "Player" + i;
             let marker = playerOneMarker === 'X' ? (i === 1 ? 'X' : 'O') : (i === 1 ? 'O' : 'X');
             let player = playerFactory(name, marker);
             playerArray.push(player);
