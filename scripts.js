@@ -130,7 +130,7 @@ const infoDisplayController = (() => {
         infoContainer.innerHTML = ''
 
         currentPlayerDiv.id = 'currentPlayerDiv'; // Add an ID for easy access
-        currentPlayerDiv.textContent = `Current turn: ${Gameflow.getCurrentPlayerName()}`;
+        currentPlayerDiv.textContent = `${Gameflow.getCurrentPlayerName()}'s turn`;
 
         const turnCounterDiv = divCreator.cloneNode();
         turnCounterDiv.id = 'turnCounterDiv'; // Add an ID for easy access
@@ -148,8 +148,8 @@ const infoDisplayController = (() => {
         const currentPlayerDiv = document.getElementById('currentPlayerDiv');
         const turnCounterDiv = document.getElementById('turnCounterDiv');
 
-        currentPlayerDiv.textContent = `Current turn: ${Gameflow.getCurrentPlayerName()}`;
-        turnCounterDiv.textContent = `Turns: ${Gameflow.getTurnCounter()}`;
+        currentPlayerDiv.textContent = `${Gameflow.getCurrentPlayerName()}'s turn`;
+        turnCounterDiv.textContent = `Turns passed: ${Gameflow.getTurnCounter()}`;
     }
 
     return {
